@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>マウステストサイト - UI改善版</title>
+    <!-- RobotoフォントをGoogle Fontsからインポート -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* ==================== CSSスタイル ==================== */
+
+        /* テーマ変数 */
+        :root {
+            --bg-color: #f0f2f5;
+            --text-color: #333;
+            --border-color: #e0e0e0;
+            --header-bg-color: #007bff;
+            --header-text-color: #fff;
+            --panel-bg-color: #ffffff;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            --svg-color: #007bff; /* SVGアイコンの色 */
+            --button-bg-color: #007bff;
+            --button-text-color: #fff;
+            --button-hover-bg: #0056b3;
+            --log-bg-color: #f9f9f9;
+        }
+
+        /* ダークテーマの自動切り替え */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #2c2c2c;
+                --text-color: #e0e0e0;
+                --border-color: #444;
+                --header-bg-color: #6a0dad; /* 紫系の色に変更 */
+                --header-text-color: #fff;
+                --panel-bg-color: #3a3a3a;
+                --shadow-color: rgba(0, 0, 0, 0.4);
+                --svg-color: #8a2be2; /* SVGアイコンの色 (紫系) */
+                --button-bg-color: #8a2be2;
+                --button-text-color: #fff;
+                --button-hover-bg: #6a0dad;
+                --log-bg-color: #303030;
+            }
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            transition: background-color 0.3s, color 0.3s;
+            /* デフォルトのカーソルを非表示にする (PCの場合のみ有効) */
+            cursor: none;
+            line-height: 1.6;
+        }
+
+        .header {
+            width: 100%;
+            max-width: 900px;
+            background-color: var(--header-bg-color);
+            padding: 20px 25px;
+            border-radius: 12px;
+            box-shadow: 0 6px 12px var(--shadow-color);
+            text-align: center;
+            font-size: 1.8em;
+            font-weight: bold;
+            margin-bottom: 30px;
+            color: var(--header-text-color);
+            letter-spacing: 1px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            display: grid;
+            gap: 25px;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        }
+
+        .panel {
+            background-color: var(--panel-bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: 0 4px 10px var(--shadow-color);
+            padding: 25px;
+            min-height: 150px; /* パネルの最低高さを設定 */
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.2s ease-in-out;
+        }
+
+        .panel:hover {
+            transform: translateY(-5px);
+        }
+
+        .panel h2 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-size: 1.4em;
+            color: var(--text-color);
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 12px;
+            font-weight: 700;
+        }
+
+        .info-item {
+            margin-bottom: 12px;
+            font-size: 0.95em;
+            display: flex; /* flexboxで子要素を配置 */
+            justify-content: space-between; /* 左右に配置 */
+            align-items: baseline; /* ベースラインで揃える */
+        }
+        .info-item strong {
+            color: var(--text-color);
+            margin-right: 10px;
+            flex-shrink: 0; /* 縮小させない */
+            white-space: nowrap; /* ラベルは改行させない */
+        }
+        .info-item span {
+            text-align: right; /* 値を右寄せ */
+            flex-grow: 1; /* 可能な限りスペースを占める */
+            min-width: 0; /* flexアイテムがコンテンツの最小幅で拡大しないようにする */
+            word-wrap: break-word; /* 長い文字列の折り返し (古いIE用だがモダンブラウザでも有効) */
+            overflow-wrap: break-word; /* CSS3の標準プロパティ */
+        }
+
+        /* ログパネル固有のスタイル */
+        #event-logs {
+            grid-column: 1 / -1; /* 全幅を使用 */
+            min-height: 250px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #event-logs h2 {
+            margin-bottom: 15px;
+        }
+
+        .log-list-container {
+            flex-grow: 1;
+            background-color: var(--log-bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            overflow-y: auto;
+            max-height: 300px; /* ログリストの最大高さ */
+            font-family: 'Roboto Mono', monospace; /* ログは等幅フォントが良いかも */
+            font-size: 0.85em;
+            line-height: 1.4;
+        }
+
+        .log-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .log-list li {
+            margin-bottom: 5px;
+            padding-bottom: 5px;
+            border-bottom: 1px dashed var(--border-color);
+        }
+
+        .log-list li:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .log-list li .timestamp {
+            color: #888;
+            margin-right: 10px;
+            white-space: nowrap;
+        }
+
+        .log-actions {
+            margin-top: 15px;
+            text-align: right;
+        }
+
+        /* ボタンのスタイル */
+        .button {
+            background-color: var(--button-bg-color);
+            color: var(--button-text-color);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+        }
+
+        .button:hover {
+            background-color: var(--button-hover-bg);
+            transform: translateY(-2px);
+        }
+
+        .button:active {
+            transform: translateY(0);
+        }
+
+        /* カスタムカーソル */
+        #custom-cursor {
+            position: fixed;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+            transition: transform 0.05s ease-out, opacity 0.2s;
+            opacity: 0;
+            visibility: hidden;
+            display: flex; /* SVGを中央揃えにするため */
+            align-items: center;
+            justify-content: center;
+        }
+
+        #custom-cursor svg {
+            width: 28px; /* SVGアイコンのサイズを少し大きく */
+            height: 28px;
+            color: var(--svg-color);
+            fill: currentColor;
+            display: block;
+        }
+
+        /* モバイルデバイスでの表示調整 */
+        @media (max-width: 768px) {
+            body {
+                padding: 15px;
+            }
+            .header {
+                font-size: 1.5em;
+                padding: 15px 20px;
+                margin-bottom: 20px;
+            }
+            .container {
+                grid-template-columns: 1fr; /* 小さい画面では1列にする */
+                gap: 20px;
+            }
+            .panel {
+                padding: 20px;
+                min-height: auto; /* 高さを自動調整 */
+            }
+            .panel h2 {
+                font-size: 1.3em;
+                margin-bottom: 15px;
+            }
+            .info-item {
+                font-size: 0.9em;
+                margin-bottom: 10px;
+            }
+            #custom-cursor svg {
+                width: 36px; /* モバイルではさらに大きめに表示 */
+                height: 36px;
+            }
+            .log-list-container {
+                max-height: 200px; /* モバイルでのログリストの最大高さ */
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">マウステストサイト</div>
+
+    <div class="container">
+        <div class="panel" id="click-info">
+            <h2>クリックイベント</h2>
+            <div class="info-item"><strong>クリック数:</strong> <span id="click-count">0</span></div>
+            <div class="info-item"><strong>最後のクリック座標:</strong> <span id="last-click-coords">N/A</span></div>
+        </div>
+
+        <div class="panel" id="mouse-position-info">
+            <h2>マウス位置 (リアルタイム)</h2>
+            <div class="info-item"><strong>X座標:</strong> <span id="mouse-x">0</span></div>
+            <div class="info-item"><strong>Y座標:</strong> <span id="mouse-y">0</span></div>
+        </div>
+
+        <div class="panel" id="scroll-info">
+            <h2>スクロールイベント</h2>
+            <div class="info-item"><strong>スクロール回数:</strong> <span id="scroll-count">0</span></div>
+            <div class="info-item"><strong>現在のスクロールY:</strong> <span id="scroll-y">0</span>px</div>
+        </div>
+
+        <div class="panel" id="device-info">
+            <h2>デバイス情報</h2>
+            <div class="info-item"><strong>ユーザーエージェント:</strong> <span id="user-agent">N/A</span></div>
+            <div class="info-item"><strong>画面サイズ (WxH):</strong> <span id="screen-size">N/A</span></div>
+            <div class="info-item"><strong>タッチサポート:</strong> <span id="touch-support">N/A</span></div>
+            <div class="info-item"><strong>オンライン状態:</strong> <span id="online-status">N/A</span></div>
+        </div>
+
+        <div class="panel" id="event-logs">
+            <h2>イベントログ</h2>
+            <div class="log-list-container">
+                <ul class="log-list" id="event-logs-list">
+                    <!-- ログがここに追加されます -->
+                </ul>
+            </div>
+            <div class="log-actions">
+                <button class="button" id="clear-logs-button">ログをクリア</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- カスタムマウスカーソル用のSVGアイコン -->
+    <div id="custom-cursor">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-cursor" viewBox="0 0 16 16">
+            <path d="M14.082 2.182a.5.5 0 0 1 .103.557L8.528 15.467a.5.5 0 0 1-.917-.007L5.57 10.694.803 8.652a.5.5 0 0 1-.006-.916l12.728-5.657a.5.5 0 0 1 .556.103zM2.25 8.184l3.897 1.67a.5.5 0 0 1 .262.263l1.67 3.897L12.743 3.52z"/>
+        </svg>
+    </div>
+
+    <script>
+        // ==================== JavaScriptコード ====================
+
+        // DOM要素の取得
+        const clickCountSpan = document.getElementById('click-count');
+        const lastClickCoordsSpan = document.getElementById('last-click-coords');
+        const mouseXSpan = document.getElementById('mouse-x');
+        const mouseYSpan = document.getElementById('mouse-y');
+        const scrollCountSpan = document.getElementById('scroll-count');
+        const scrollYSpan = document.getElementById('scroll-y');
+        const userAgentSpan = document.getElementById('user-agent');
+        const screenSizeSpan = document.getElementById('screen-size');
+        const touchSupportSpan = document.getElementById('touch-support');
+        const onlineStatusSpan = document.getElementById('online-status');
+        const customCursor = document.getElementById('custom-cursor');
+        const eventLogsList = document.getElementById('event-logs-list');
+        const clearLogsButton = document.getElementById('clear-logs-button');
+
+        let clickCount = 0;
+        let scrollCount = 0;
+        let customCursorVisible = false; // カーソル要素の表示状態を管理
+        const MAX_LOGS = 50; // 表示するログの最大数
+
+        // --- カスタムカーソルの表示/非表示関数 ---
+        const showCustomCursor = () => {
+            if (!customCursorVisible) {
+                customCursor.style.opacity = '1';
+                customCursor.style.visibility = 'visible';
+                customCursorVisible = true;
+            }
+        };
+
+        const hideCustomCursor = () => {
+            if (customCursorVisible) {
+                customCursor.style.opacity = '0';
+                customCursor.style.visibility = 'hidden';
+                customCursorVisible = false;
+            }
+        };
+
+        // --- ログ追加関数 ---
+        const addLog = (type, message) => {
+            const now = new Date();
+            const timestamp = now.toLocaleTimeString('ja-JP', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                fractionalSecondDigits: 3 // ミリ秒まで表示
+            });
+
+            const listItem = document.createElement('li');
+            listItem.innerHTML = `<span class="timestamp">[${timestamp}]</span> <strong>${type}:</strong> ${message}`;
+            eventLogsList.prepend(listItem); // 新しいログをリストの先頭に追加
+
+            // ログの最大数を超えた場合、一番古いものを削除
+            while (eventLogsList.children.length > MAX_LOGS) {
+                eventLogsList.removeChild(eventLogsList.lastChild);
+            }
+        };
+
+        // --- クリックイベント ---
+        document.addEventListener('click', (e) => {
+            clickCount++;
+            clickCountSpan.textContent = clickCount;
+            lastClickCoordsSpan.textContent = `${e.clientX}, ${e.clientY}`;
+            addLog('Click', `座標: ${e.clientX}, ${e.clientY} | 要素: ${e.target.tagName}#${e.target.id || ''}.${e.target.className.split(' ')[0] || ''}`);
+        });
+
+        // --- マウス位置イベント (PC) & タッチ位置イベント (モバイル) ---
+        // カーソルの位置を更新し、表示も制御
+        const updateCursorPosition = (x, y) => {
+            mouseXSpan.textContent = x;
+            mouseYSpan.textContent = y;
+            // カスタムカーソルの位置を更新
+            customCursor.style.left = `${x}px`;
+            customCursor.style.top = `${y}px`;
+            showCustomCursor();
+        };
+
+        // マウス移動イベント
+        document.addEventListener('mousemove', (e) => {
+            updateCursorPosition(e.clientX, e.clientY);
+        });
+
+        // タッチイベント (モバイルデバイス対応)
+        // タッチ開始時にカーソルを表示し、タッチ位置に移動
+        document.addEventListener('touchstart', (e) => {
+            if (e.touches.length > 0) {
+                const touch = e.touches[0];
+                updateCursorPosition(touch.clientX, touch.clientY);
+                addLog('Touch Start', `座標: ${touch.clientX}, ${touch.clientY} (${e.touches.length}本指)`);
+            }
+        });
+
+        // タッチ移動時にカーソルを追従
+        document.addEventListener('touchmove', (e) => {
+            if (e.touches.length > 0) {
+                const touch = e.touches[0];
+                updateCursorPosition(touch.clientX, touch.clientY);
+            }
+        });
+
+        // PCでマウスが画面外に出たときにカーソルを非表示にする
+        document.addEventListener('mouseleave', () => {
+             // ポインタが「高精度」（マウスなど）の場合のみ適用
+            if (window.matchMedia('(pointer: fine)').matches) {
+                hideCustomCursor();
+            }
+        });
+
+        // PCでマウスが画面内に入ったときにカーソルを再表示する
+        document.addEventListener('mouseenter', () => {
+            if (window.matchMedia('(pointer: fine)').matches) {
+                showCustomCursor();
+            }
+        });
+
+        // --- スクロールイベント ---
+        window.addEventListener('scroll', () => {
+            scrollCount++;
+            scrollCountSpan.textContent = scrollCount;
+            const currentScrollY = window.scrollY;
+            scrollYSpan.textContent = currentScrollY;
+            // スクロールイベントは頻繁に発生するため、ログは間引きするか、特定の間隔で記録する方が良い場合も
+            // 今回はシンプルに毎回ログに残す
+            addLog('Scroll', `現在のスクロールY: ${currentScrollY}px`);
+        });
+
+        // --- デバイス情報 ---
+        const updateDeviceInfo = () => {
+            userAgentSpan.textContent = navigator.userAgent;
+            screenSizeSpan.textContent = `${window.innerWidth}x${window.innerHeight} (全体: ${window.screen.width}x${window.screen.height})`;
+            
+            // タッチサポートの判定
+            // 'ontouchstart'の存在、またはnavigator.maxTouchPoints > 0
+            const isTouchDevice = ('ontouchstart' in window && typeof window.ontouchstart === 'function') || (navigator.maxTouchPoints > 0);
+            touchSupportSpan.textContent = isTouchDevice ? 'あり' : 'なし';
+
+            onlineStatusSpan.textContent = navigator.onLine ? 'オンライン' : 'オフライン';
+        };
+
+        // --- ログクリアボタンイベント ---
+        clearLogsButton.addEventListener('click', () => {
+            eventLogsList.innerHTML = ''; // ログリストを空にする
+            addLog('System', 'ログがクリアされました。'); // クリアしたことをログに残す
+        });
+
+        // 初期ロード時とリサイズ時にデバイス情報を更新
+        document.addEventListener('DOMContentLoaded', () => {
+            updateDeviceInfo();
+            addLog('System', 'サイトがロードされました。');
+        });
+        window.addEventListener('resize', updateDeviceInfo);
+
+        // オンライン/オフライン状態の変化を監視
+        window.addEventListener('online', () => {
+            onlineStatusSpan.textContent = 'オンライン';
+            addLog('System', 'オンラインになりました。');
+        });
+        window.addEventListener('offline', () => {
+            onlineStatusSpan.textContent = 'オフライン';
+            addLog('System', 'オフラインになりました。');
+        });
+    </script>
+</body>
+</html>
